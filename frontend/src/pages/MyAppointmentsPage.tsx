@@ -1,0 +1,32 @@
+import React, { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, ArrowRight, CalendarDays, Clock3, MapPin, Plus, XCircle } from 'lucide-react';
+import { api } from '../services/api.js';
+import { IAppointment } from '../types/index.js';
+import { CancelModal } from '../components/CancelModal.js';
+import { useAuth } from '../context/AuthContext.js';
+
+interface MyAppointmentsPageProps { onNavigateToBrowse: () => void; }
+
+export const MyAppointmentsPage: React.FC<MyAppointmentsPageProps> = ({ onNavigateToBrowse }) => {
+  const { user } = useAuth();
+  const client = useQueryClient();
+  const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [cancelling, setCancelling] = useState<IAppointment | null>(null);
+  const { data, isLoading, error, refetch } = useQuery({ queryKey: ['user-appointments', tab, user?.id], queryFn: () => api.getUserAppointments(tab), enabled: Boolean(user) });
+  const cancel = useMutation({ mutationFn: ({ id, reason }: { id: string; reason?: string }) => api.cancelAppointment(id, reason), onSuccess: () => { client.invalidateQueries({ queryKey: ['user-appointments'] }); client.invalidateQueries({ queryKey: ['slots'] }); client.invalidateQueries({ queryKey: ['available-dates'] }); } });
+  const appointments = data?.appointments ?? [];
+  return <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <div className="flex flex-col justify-between gap-5 border-b border-slate-200 pb-7 dark:border-slate-800 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">Your care plan</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">My appointments</h1><p className="mt-2 text-sm text-slate-500">Keep track of what’s next and your appointment history.</p></div><button onClick={onNavigateToBrowse} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-indigo-600/25 hover:bg-indigo-500"><Plus className="h-4 w-4" />Book appointment</button></div>
+    <div className="mt-6 flex items-center justify-between"><div className="flex gap-5 border-b border-slate-200 dark:border-slate-800">{(['upcoming', 'past'] as const).map(item => <button key={item} onClick={() => setTab(item)} className={`border-b-2 px-1 pb-3 text-xs font-bold capitalize transition ${tab === item ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>{item === 'past' ? 'History' : 'Upcoming'}</button>)}</div><button onClick={() => refetch()} className="text-xs font-semibold text-slate-500 hover:text-indigo-600">Refresh</button></div>
+    {isLoading ? <div className="mt-5 space-y-3">{[1, 2].map(i => <div key={i} className="h-36 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />)}</div> : error ? <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center"><AlertCircle className="mx-auto h-6 w-6 text-rose-600" /><p className="mt-2 text-sm font-bold text-rose-950">Your appointments couldn’t be loaded.</p><button onClick={() => refetch()} className="mt-3 text-xs font-bold text-rose-700">Try again</button></div> : appointments.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900"><CalendarDays className="mx-auto h-8 w-8 text-slate-400" /><p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{tab === 'upcoming' ? 'Nothing scheduled yet' : 'No appointment history yet'}</p><p className="mt-1 text-xs text-slate-500">{tab === 'upcoming' && 'When you book a time, it will appear here.'}</p>{tab === 'upcoming' && <button onClick={onNavigateToBrowse} className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-indigo-600">Find a time <ArrowRight className="h-3.5 w-3.5" /></button>}</div> : <div className="mt-5 space-y-3">{appointments.map(appointment => <AppointmentRow key={appointment._id} appointment={appointment} onCancel={() => setCancelling(appointment)} />)}</div>}
+    <CancelModal appointment={cancelling} isOpen={!!cancelling} onClose={() => setCancelling(null)} onConfirmCancel={async (id, reason) => { await cancel.mutateAsync({ id, reason }); }} />
+  </div>;
+};
+
+const AppointmentRow: React.FC<{ appointment: IAppointment; onCancel: () => void }> = ({ appointment, onCancel }) => {
+  const slot = appointment.slotId;
+  const date = new Date(`${slot.date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const cancelled = appointment.status === 'CANCELLED';
+  return <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex sm:items-center sm:gap-6"><div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"><span className="text-[10px] font-bold uppercase">{new Date(`${slot.date}T12:00:00`).toLocaleDateString('en-US', { month: 'short' })}</span><span className="text-xl font-extrabold leading-5">{new Date(`${slot.date}T12:00:00`).getDate()}</span></div><div className="mt-4 min-w-0 flex-1 sm:mt-0"><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-bold text-slate-900 dark:text-white">{slot.serviceName}</h2><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${cancelled ? 'bg-slate-100 text-slate-500 dark:bg-slate-800' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'}`}>{cancelled ? 'Cancelled' : appointment.status === 'COMPLETED' ? 'Completed' : 'Confirmed'}</span></div><p className="mt-1 text-xs text-slate-500">with {slot.providerName}</p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500"><span className="flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-indigo-500" />{date} · {slot.startTime}</span><span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-indigo-500" />{slot.location}</span></div></div>{appointment.status === 'BOOKED' && !appointment.isPast && <button onClick={onCancel} className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-500 sm:mt-0"><XCircle className="h-4 w-4" />Cancel</button>}</article>;
+};

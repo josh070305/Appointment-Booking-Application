@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment variables (NEVER commit this)
+.env
+
+# Build artifacts
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# IDE specific
+.vscode/
+.idea/
+
+# Database
+*.sqlite
+*.db
+
+# Uploads
+uploads/

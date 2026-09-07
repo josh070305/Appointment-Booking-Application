@@ -1,0 +1,17 @@
+{
+  "name": "appointment-booking-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade full stack appointment booking system with atomic concurrency-safe booking",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "seed": "npm --prefix backend run seed",
+    "test": "npm --prefix backend test"
+  },
+  "keywords": ["appointment", "booking", "concurrency", "cas", "react", "nodejs", "mongodb"],
+  "author": "Joshna P. S.",
+  "license": "MIT"
+}
