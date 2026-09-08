@@ -95,6 +95,7 @@ export async function register(req: Request, res: Response, next: NextFunction):
     res.status(201).json({
       success: true,
       data: {
+        token,
         user: {
           id: user._id,
           name: user.name,
@@ -147,6 +148,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     res.status(200).json({
       success: true,
       data: {
+        token,
         user: {
           id: user._id,
           name: user.name,
@@ -192,6 +194,7 @@ export async function demoLogin(req: Request, res: Response, next: NextFunction)
     res.status(200).json({
       success: true,
       data: {
+        token,
         user: {
           id: user._id,
           name: user.name,

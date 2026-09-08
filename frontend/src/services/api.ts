@@ -46,7 +46,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   const response = await fetch(url, {
     ...options,
-    headers
+    headers,
+    credentials: 'include'
   });
 
   const data: ApiResponse<T> = await response.json();
