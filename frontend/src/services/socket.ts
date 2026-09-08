@@ -6,7 +6,8 @@ let socket: Socket | null = null;
 export function initSocketClient(queryClient: QueryClient): Socket {
   if (socket) return socket;
 
-  const serverUrl = import.meta.env.VITE_API_URL || window.location.origin;
+  const rawServerUrl = import.meta.env.VITE_API_URL || window.location.origin;
+  const serverUrl = rawServerUrl.trim();
 
   socket = io(serverUrl, {
     transports: ['websocket', 'polling'],
