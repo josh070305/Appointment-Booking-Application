@@ -2,12 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import path from 'path';
 import authRoutes from './routes/authRoutes.js';
 import slotRoutes from './routes/slotRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import assistantRoutes from './routes/assistantRoutes.js';
 import { csrfMiddleware, getCsrfTokenHandler } from './middleware/csrf.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { ENV } from './config/env.js';
 
 const app = express();
 
@@ -71,6 +73,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/slots', slotRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/assistant', assistantRoutes);
+
+// Serve static frontend files in production
+if (ENV.NODE_ENV === 'production') {
+  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendDistPath));
+
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/socket.io')) {
+      res.sendFile(path.join(frontendDistPath, 'index.html'));
+    }
+  });
+}
 
 // 404 handler
 app.use((_req, res) => {
