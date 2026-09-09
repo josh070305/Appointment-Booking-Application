@@ -33,9 +33,10 @@ app.use(helmet({
 
 // CORS - adjust as needed for production
 const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : ['*'];
+const vercelPreviewPattern = /^https:\/\/appointment-booking-application-[^\/]+\.vercel\.app$/;
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin) || vercelPreviewPattern.test(origin)) {
       callback(null, origin || true);
     } else {
       callback(new Error('Not allowed by CORS'));
