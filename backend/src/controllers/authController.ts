@@ -112,29 +112,6 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
     }
 
-    // Check if email is verified; if not, require re-login with re-sent verification
-    if (!user.emailVerified) {
-      const verificationToken = generateVerificationToken();
-      user.emailVerificationToken = verificationToken;
-      user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      await user.save();
-
-      try {
-        await sendVerificationEmailLink(user, verificationToken);
-      } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
-      }
-
-      res.status(200).json({
-        success: false,
-        error: {
-          code: 'EMAIL_NOT_VERIFIED',
-          message: 'Your email is not verified. A verification link has been sent to your email address.'
-        }
-      });
-      return;
-    }
-
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
