@@ -74,8 +74,12 @@ export async function register(req: Request, res: Response, next: NextFunction):
       emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     });
 
-    // Send verification email (mock)
-    await sendVerificationEmailLink(user, verificationToken);
+    // Send verification email
+    try {
+      await sendVerificationEmailLink(user, verificationToken);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+    }
 
     // Generate token and set httpOnly cookie
     const token = generateToken(user._id.toString(), user.email, user.role);
@@ -115,8 +119,12 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await user.save();
 
-      await sendVerificationEmailLink(user, verificationToken);
-      // Indicate email verification is needed
+      try {
+        await sendVerificationEmailLink(user, verificationToken);
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+      }
+
       res.status(200).json({
         success: false,
         error: {
@@ -124,6 +132,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
           message: 'Your email is not verified. A verification link has been sent to your email address.'
         }
       });
+      return;
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
