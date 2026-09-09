@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { User } from '../models/User.js';
 import { ENV } from '../config/env.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { sendVerificationEmail } from '../services/emailService.js';
 
 // Zod validation schemas
 export const registerSchema = z.object({
@@ -18,17 +19,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required')
 });
 
-// Mock email sender - in production, configure real SMTP via env vars
-const sendVerificationEmail = async (userEmail: string, token: string): Promise<void> => {
-  const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/api/auth/verify-email?token=${token}`;
-
-  console.log('📧 EMAIL MOCK:', {
-    to: userEmail,
-    subject: 'Verify your email address',
-    text: `Please click this link to verify your email: ${verificationUrl}`,
-    html: `<p>Please click <a href="${verificationUrl}">this link</a> to verify your email address.</p>`
-  });
-};
+// Send email verification link via SMTP
+async function sendVerificationEmailLink(user: any, token: string): Promise<void> {
+  await sendVerificationEmail(user.email, token);
+}
 
 function generateVerificationToken(): string {
   return jwt.sign(
@@ -44,11 +38,6 @@ function generateToken(userId: string, email: string, role: string): string {
     ENV.JWT_SECRET,
     { expiresIn: '7d' }
   );
-}
-
-// Send email verification link (mock implementation)
-async function sendVerificationEmailLink(user: any, token: string): Promise<void> {
-  await sendVerificationEmail(user.email, token);
 }
 
 // Set httpOnly JWT cookie and return success response
