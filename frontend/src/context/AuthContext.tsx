@@ -103,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
+    performDemoLogin('demo.user@example.com', 'Alex Johnson');
   };
 
   return (
